@@ -123,7 +123,7 @@ namespace inviwo {
 			0---------1
 			x
 			*/
-#define ENABLE_BARYCENTRIC_UNITTEST 0
+#define ENABLE_BARYCENTRIC_UNITTEST 1
 			template<typename T, typename F = double>
 			T barycentric(const std::array<T, 4> &v, F x, F y) {
 				if (x + y < 1) //lower triangle
@@ -132,7 +132,7 @@ namespace inviwo {
 				}
 				else
 				{
-					return (1 + x + y)*v[0] + x*v[1] + y*v[2]; //not done
+					return (x + y - 1)*v[3] + (1-y)*v[1] + (1-x)*v[2]; //not done
 				}
 
 			}

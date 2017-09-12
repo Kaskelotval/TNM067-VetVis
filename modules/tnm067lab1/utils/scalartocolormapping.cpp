@@ -46,13 +46,19 @@ void ScalarToColorMapping::addBaseColors(vec4 color) { baseColors_.push_back(col
 vec4 ScalarToColorMapping::sample(float t) {
     if (baseColors_.size() == 0) return vec4(t);
     if (baseColors_.size() == 1) return vec4(baseColors_[1]);
+	size_t N = baseColors_.size();
+
+	float newscale = (N - 1)*t;
+	int colorLeft = floor(newscale);
+	int colorRight = colorLeft + 1;
+	float pos = newscale - colorLeft;
 
     // Implement here:
     // Interpolate colors in baseColors_
 	vec4 interpolatedcolor(1); //create a 1-vector
-	interpolatedcolor.x = (1 - t)*baseColors_[0].x + baseColors_[1].x*t; //interpolate x
-	interpolatedcolor.y = (1 - t)*baseColors_[0].y + baseColors_[1].y*t; //interpolate y
-	interpolatedcolor.z = (1 - t)*baseColors_[0].z + baseColors_[1].z*t; //interpolate z
+	interpolatedcolor.x = (1 - pos)*baseColors_[colorLeft].x + baseColors_[colorRight].x*pos; //interpolate x
+	interpolatedcolor.y = (1 - pos)*baseColors_[colorLeft].y + baseColors_[colorRight].y*pos; //interpolate y
+	interpolatedcolor.z = (1 - pos)*baseColors_[colorLeft].z + baseColors_[colorRight].z*pos; //interpolate z
 
 	// return the right values
 
@@ -60,7 +66,6 @@ vec4 ScalarToColorMapping::sample(float t) {
     if(t>=1) return vec4(baseColors_.back()); 
 	return vec4(interpolatedcolor); //return the interpolated color
     vec4 finalColor(0, 0, 255, 1); // dummy color
-    size_t N = baseColors_.size();
 
     
     // TASK 5 : Linear interpolation between to colors in baseColors_ 

@@ -26,7 +26,7 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
 *********************************************************************************/
-
+#define _USE_MATH_DEFINES
 #include <modules/tnm067lab2/processors/hydrogengenerator.h>
 #include <inviwo/core/datastructures/volume/volume.h>
 #include <inviwo/core/util/volumeramutils.h>
@@ -34,6 +34,7 @@
 #include <inviwo/core/util/indexmapper.h>
 #include <inviwo/core/datastructures/volume/volumeram.h>
 #include <modules/base/algorithm/dataminmax.h>
+#include <math.h>
 
 namespace inviwo {
 
@@ -76,13 +77,26 @@ namespace inviwo {
 
     inviwo::vec3 HydrogenGenerator::cartesianToSphereical(vec3 cartesian) {
         vec3 sph;
-        //TODO implement this
+		float r = glm::length(cartesian);
+		if (r == 0)
+			return vec3(0.0);
+		float theta = acos(cartesian.z / r);
+		float phi = atan2(cartesian.y, cartesian.x);
+		sph = vec3(r, theta, phi);
         return sph;
     }
 
     double HydrogenGenerator::eval(vec3 cartesian) {
-        //TODO implement this
-        return 0;
+		vec3 sph = cartesianToSphereical(cartesian);
+		float p1, p2, p3, p4, p5;
+
+		p1 = 1 / (81 * sqrt(6 * M_PI));
+		p2 = pow(1 / 1, (3 / 2)); //Z, a0 = 1
+		p3 = pow(sph.x, 2);
+		p4 = exp(-sph.x / 3);
+		p5 = 3 * cos(sph.y)*cos(sph.y) - 1;
+
+        return pow(p1*p2*p3*p4*p5,2);
     }
 
     inviwo::vec3 HydrogenGenerator::idTOCartesian(size3_t pos) {

@@ -88,54 +88,58 @@ namespace inviwo {
                     }
                     case inviwo::ImageUpsampler::IntepolationMethod::Bilinear:
                     {
-						//						finalColor = inviwo::TNM067::Interpolation::linear(inPixels[inIndex(ivec2(floor(inImageCoords.x),floor(inImageCoords.y))]), inPixels[inIndex(ivec2(floor(outImageCoords.x), floor(outImageCoords.y))]));
+						dvec2 newCoords = dvec2(inImageCoords.x - 0.5, inImageCoords.y - 0.5);
 						std::array<T, 4> a = {
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)		, std::floor(inImageCoords.y)))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 1	, std::floor(inImageCoords.y)))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)		, std::floor(inImageCoords.y) + 1))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 1	, std::floor(inImageCoords.y) + 1))]
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)		, std::floor(newCoords.y)))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 1	, std::floor(newCoords.y)))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)		, std::floor(newCoords.y) + 1))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 1	, std::floor(newCoords.y) + 1))]
 						};
 							finalColor = inviwo::TNM067::Interpolation::bilinear(
 								a,
-							    inImageCoords.x - std::floor(inImageCoords.x),
-								inImageCoords.y - std::floor(inImageCoords.y));
+								newCoords.x - std::floor(newCoords.x),
+								newCoords.y - std::floor(newCoords.y));
 						// Update finalColor
                         break;
                     }
                     case inviwo::ImageUpsampler::IntepolationMethod::Quadratic:
                     {
                         // Update finalColor
+
+						dvec2 newCoords = dvec2(inImageCoords.x - 0.5, inImageCoords.y - 0.5);
+
 						std::array<T, 9> a = {
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)		, std::floor(inImageCoords.y)))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 1	, std::floor(inImageCoords.y)))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 2	, std::floor(inImageCoords.y)))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)		, std::floor(inImageCoords.y) +1))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)	+1	, std::floor(inImageCoords.y) +1))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)	+2	, std::floor(inImageCoords.y)+1))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)		, std::floor(inImageCoords.y) +2))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 1	, std::floor(inImageCoords.y)+2))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 2	, std::floor(inImageCoords.y)+2))]
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)		, std::floor(newCoords.y)))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 1	, std::floor(newCoords.y)))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 2	, std::floor(newCoords.y)))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)		, std::floor(newCoords.y) +1))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)	+1	, std::floor(newCoords.y) +1))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)	+2	, std::floor(newCoords.y)+1))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)		, std::floor(newCoords.y) +2))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 1	, std::floor(newCoords.y)+2))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 2	, std::floor(newCoords.y)+2))]
 						};
 						finalColor = inviwo::TNM067::Interpolation::biQuadratic(
 							a,
-							inImageCoords.x - std::floor(inImageCoords.x),
-							inImageCoords.y - std::floor(inImageCoords.y));
+							(newCoords.x - std::floor(newCoords.x)) / 2,
+							(newCoords.y - std::floor(newCoords.y)) / 2
+						);
                         
 						break;
                     }
                     case inviwo::ImageUpsampler::IntepolationMethod::Barycentric:
                     {
-
+						dvec2 newCoords = dvec2(inImageCoords.x - 0.5, inImageCoords.y - 0.5);
 						std::array<T, 4> a = {
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)		, std::floor(inImageCoords.y)))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 1	, std::floor(inImageCoords.y)))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x)		, std::floor(inImageCoords.y) + 1))],
-							inPixels[inIndex(ivec2(std::floor(inImageCoords.x) + 1	, std::floor(inImageCoords.y) + 1))]
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)		, std::floor(newCoords.y)))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 1	, std::floor(newCoords.y)))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x)		, std::floor(newCoords.y) + 1))],
+							inPixels[inIndex(ivec2(std::floor(newCoords.x) + 1	, std::floor(newCoords.y) + 1))]
 						};
 						finalColor = inviwo::TNM067::Interpolation::barycentric(
 							a,
-							inImageCoords.x - std::floor(inImageCoords.x),
-							inImageCoords.y - std::floor(inImageCoords.y));
+							newCoords.x - std::floor(newCoords.x),
+							newCoords.y - std::floor(newCoords.y));
                         break;
                     }
                     default:
