@@ -86,6 +86,7 @@ void MarchingTetrahedra::process() {
     float iso = isoValue_.get();
 
     util::IndexMapper3D index(dims);
+	util::IndexMapper3D findex(size3_t(2, 2, 2));
 
     const static size_t tetrahedraIds[6][4] = {{0, 1, 2, 5}, {1, 3, 2, 5}, {3, 2, 5, 7},
                                                {0, 2, 4, 5}, {6, 4, 2, 5}, {6, 7, 5, 2}};
@@ -94,6 +95,7 @@ void MarchingTetrahedra::process() {
     for (pos.z = 0; pos.z < dims.z - 1; ++pos.z) {
         for (pos.y = 0; pos.y < dims.y - 1; ++pos.y) {
             for (pos.x = 0; pos.x < dims.x - 1; ++pos.x) {
+
                 // Step 1: create current cell
 				// Use volume->getAsDouble to query values from the volume
 				// Spatial position should be between 0 and 1
@@ -107,15 +109,10 @@ void MarchingTetrahedra::process() {
 					{
 						for (int z = 0; z <= 1; z++)
 						{
-							Voxel voxel; //create the voxel
-
-							c.voxels[voxIndex].pos = vec3(x, y, z); //set the position of the voxel (between 0-1)
-							c.voxels[voxIndex].value = volume->getAsDouble(vec3(pos.x + x, pos.y + y, pos.z + z)); //density...?
-							c.voxels[voxIndex].index = index(c.voxels[voxIndex].pos);
-
-							voxIndex++;
+							c.voxels[findex(size3_t(x, y, z))].index = index(size3_t(pos.x + x, pos.y + y, pos.z + z));
+							c.voxels[findex(size3_t(x, y, z))].pos = vec3(size3_t(pos.x + x, pos.y + y, pos.z + z)) / vec3(dims - size3_t(1));
+							c.voxels[findex(size3_t(x, y, z))].value = volume->getAsDouble(size3_t(pos.x + x, pos.y + y, pos.z + z));
 						}
-
 					}
 				}
 
@@ -127,16 +124,21 @@ void MarchingTetrahedra::process() {
 				{	
 					for (int j = 0; j < 4; j++)
 						tetra.voxels[j] = c.voxels[tetrahedraIds[i][j]];
+					
+					tetrahedras.push_back(tetra);
 				}
 
                 for (const Tetrahedra& tetrahedra : tetrahedras) {
+					//std::cout << "caseID: " << std::endl;
                     // Step three: Calculate for tetra case index
                     int caseId = 0;
 					if (tetrahedra.voxels[0].value < isoValue_) caseId |= 1;
 					if (tetrahedra.voxels[1].value < isoValue_) caseId |= 2;
 					if (tetrahedra.voxels[2].value < isoValue_) caseId |= 4;
 					if (tetrahedra.voxels[3].value < isoValue_) caseId |= 8;
-
+					//if (tetrahedra.voxels[0].value < isoValue_ && tetrahedra.voxels[1].value < isoValue_) caseId |= 3;
+					//if (tetrahedra.voxels[0].value < isoValue_ && tetrahedra.voxels[2].value < isoValue_) caseId |= 5;
+					//if (tetrahedra.voxels[1].value < isoValue_ && tetrahedra.voxels[2].value < isoValue_) caseId |= 6;
                     // step four: Extract triangles
 					vec3 p0 = tetrahedra.voxels[0].pos;
 					vec3 p1 = tetrahedra.voxels[1].pos;
@@ -147,6 +149,7 @@ void MarchingTetrahedra::process() {
 					float iso1 = tetrahedra.voxels[1].value;
 					float iso2 = tetrahedra.voxels[2].value;
 					float iso3 = tetrahedra.voxels[3].value;
+					
 
 					vec3 inter0, inter1, inter2, inter3;
 					int ind0, ind1, ind2, ind3;
@@ -158,16 +161,19 @@ void MarchingTetrahedra::process() {
 							break;
 						case 1:
 						case 14:
-							inter0 = p0 + (isoValue_ - iso0)*(p1 - p0) / (iso1 - iso0);
+							inter0 = p0 + (isoValue_ - iso0)*(p1 - p0) / (iso1 - iso0); 
 							inter1 = p0 + (isoValue_ - iso0)*(p3 - p0) / (iso3 - iso0);
 							inter2 = p0 + (isoValue_ - iso0)*(p2 - p0) / (iso2 - iso0);
-
+							if (isoValue_ - iso0 > 1.0 || isoValue_ - iso0 < 0)
+								std::cout << isoValue_ - iso0 << std::endl;
+							//skapa alla punkter
 							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[0].index, tetrahedra.voxels[1].index);
 							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[0].index, tetrahedra.voxels[3].index);
 							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[0].index, tetrahedra.voxels[2].index);
-							if (caseId == 1)
+							//skapa triangel
+							if (caseId == 1) //normal uppåt
 								mesh.addTriangle(ind0, ind1, ind2);
-							else
+							else //normal nedåt (14)
 								mesh.addTriangle(ind0, ind2, ind1);
 							break;
 						case 2:
@@ -175,11 +181,12 @@ void MarchingTetrahedra::process() {
 							inter0 = p1 + (isoValue_ - iso1)*(p3 - p1) / (iso3 - iso1);
 							inter1 = p1 + (isoValue_ - iso1)*(p2 - p1) / (iso2 - iso1);
 							inter2 = p1 + (isoValue_ - iso1)*(p0 - p1) / (iso0 - iso1);
-
+							if (isoValue_ - iso0 > 1.0 || isoValue_ - iso0 < 0)
+								std::cout << isoValue_ - iso0 << std::endl;
 							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[1].index, tetrahedra.voxels[3].index);
 							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[1].index, tetrahedra.voxels[2].index);
 							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[1].index, tetrahedra.voxels[0].index);
-							if (caseId == 13)
+							if (caseId == 2)
 								mesh.addTriangle(ind0, ind1, ind2);
 							else
 								mesh.addTriangle(ind0, ind2, ind1);
@@ -190,7 +197,8 @@ void MarchingTetrahedra::process() {
 							inter1 = p1 + (isoValue_ - iso1)*(p3 - p1) / (iso3 - iso1);
 							inter2 = p0 + (isoValue_ - iso0)*(p3 - p0) / (iso3 - iso0);
 							inter3 = p0 + (isoValue_ - iso0)*(p2 - p0) / (iso2 - iso0);
-
+							if (isoValue_ - iso0 > 1.0 || isoValue_ - iso0 < 0)
+								std::cout << isoValue_ - iso0 << std::endl;
 							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[1].index, tetrahedra.voxels[2].index);
 							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[1].index, tetrahedra.voxels[3].index);
 							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[0].index, tetrahedra.voxels[3].index);
@@ -199,7 +207,6 @@ void MarchingTetrahedra::process() {
 							{
 								mesh.addTriangle(ind0, ind1, ind2);
 								mesh.addTriangle(ind0, ind2, ind3);
-
 							}
 							else
 							{
@@ -209,14 +216,15 @@ void MarchingTetrahedra::process() {
 							break;
 						case 4:
 						case 11:
-							inter0 = p2 + (isoValue_ - iso2)*(p0 - p1) / (iso0 - iso2);
-							inter1 = p2 + (isoValue_ - iso2)*(p1 - p1) / (iso1 - iso2);
-							inter2 = p2 + (isoValue_ - iso2)*(p3 - p1) / (iso3 - iso2);
-
+							inter0 = p2 + (isoValue_ - iso2)*(p0 - p2) / (iso0 - iso2);
+							inter1 = p2 + (isoValue_ - iso2)*(p1 - p2) / (iso1 - iso2);
+							inter2 = p2 + (isoValue_ - iso2)*(p3 - p2) / (iso3 - iso2);
+							if (isoValue_ - iso0 > 1.0 || isoValue_ - iso0 < 0)
+								std::cout << isoValue_ - iso0 << std::endl;
 							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[2].index, tetrahedra.voxels[0].index);
 							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[2].index, tetrahedra.voxels[1].index);
 							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[2].index, tetrahedra.voxels[3].index);
-							if (caseId == 11)
+							if (caseId == 4)
 								mesh.addTriangle(ind0, ind1, ind2);
 							else
 								mesh.addTriangle(ind0, ind2, ind1);
@@ -227,12 +235,13 @@ void MarchingTetrahedra::process() {
 							inter1 = p0 + (isoValue_ - iso0)*(p1 - p0) / (iso1 - iso0);
 							inter2 = p2 + (isoValue_ - iso2)*(p1 - p2) / (iso1 - iso2);
 							inter3 = p2 + (isoValue_ - iso2)*(p3 - p2) / (iso3 - iso2);
-
+							if (isoValue_ - iso0 > 1.0 || isoValue_ - iso0 < 0)
+								std::cout << isoValue_ - iso0 << std::endl;
 							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[0].index, tetrahedra.voxels[3].index);
 							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[0].index, tetrahedra.voxels[1].index);
 							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[2].index, tetrahedra.voxels[1].index);
 							ind3 = mesh.addVertex(inter3, tetrahedra.voxels[2].index, tetrahedra.voxels[3].index);
-							if (caseId == 10)
+							if (caseId == 5)
 							{
 								mesh.addTriangle(ind0, ind1, ind2);
 								mesh.addTriangle(ind0, ind2, ind3);
@@ -246,20 +255,20 @@ void MarchingTetrahedra::process() {
 							break;
 						case 6:
 						case 9:
-							inter0 = p1 + (isoValue_ - iso1)*(p0 - p1) / (iso0 - iso1);
-							inter1 = p1 + (isoValue_ - iso1)*(p3 - p1) / (iso3 - iso1);
-							inter2 = p2 + (isoValue_ - iso2)*(p3 - p2) / (iso3 - iso2);
-							inter3 = p2 + (isoValue_ - iso2)*(p0 - p2) / (iso0 - iso2);
-
-							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[1].index, tetrahedra.voxels[0].index);
-							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[1].index, tetrahedra.voxels[3].index);
-							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[2].index, tetrahedra.voxels[3].index);
-							ind3 = mesh.addVertex(inter3, tetrahedra.voxels[2].index, tetrahedra.voxels[0].index);
-							if (caseId == 9)
+							inter0 = p0 + (isoValue_ - iso0)*(p1 - p0) / (iso1 - iso0);
+							inter1 = p0 + (isoValue_ - iso0)*(p2 - p0) / (iso2 - iso0);
+							inter2 = p3 + (isoValue_ - iso3)*(p2 - p3) / (iso2 - iso3);
+							inter3 = p3 + (isoValue_ - iso3)*(p1 - p3) / (iso1 - iso3);
+							if (isoValue_ - iso0 > 1.0 || isoValue_ - iso0 < 0)
+								std::cout << isoValue_ - iso0 << std::endl;
+							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[0].index, tetrahedra.voxels[1].index);
+							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[0].index, tetrahedra.voxels[2].index);
+							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[3].index, tetrahedra.voxels[2].index);
+							ind3 = mesh.addVertex(inter3, tetrahedra.voxels[3].index, tetrahedra.voxels[1].index);
+							if (caseId == 6)
 							{
 								mesh.addTriangle(ind0, ind1, ind3);
 								mesh.addTriangle(ind1, ind2, ind3);
-
 							}
 							else
 							{
@@ -272,14 +281,15 @@ void MarchingTetrahedra::process() {
 							inter0 = p3 + (isoValue_ - iso3)*(p0 - p3) / (iso0 - iso3);
 							inter1 = p3 + (isoValue_ - iso3)*(p1 - p3) / (iso1 - iso3);
 							inter2 = p3 + (isoValue_ - iso3)*(p2 - p3) / (iso2 - iso3);
-
-							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[0].index, tetrahedra.voxels[0].index);
-							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[1].index, tetrahedra.voxels[1].index);
-							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[2].index, tetrahedra.voxels[3].index);
-							if (caseId == 9)
-								mesh.addTriangle(ind0, ind1, ind2);
-							else
+							if (isoValue_ - iso0 > 1.0 || isoValue_ - iso0 < 0)
+								std::cout << isoValue_ - iso0 << std::endl;
+							ind0 = mesh.addVertex(inter0, tetrahedra.voxels[3].index, tetrahedra.voxels[0].index);
+							ind1 = mesh.addVertex(inter1, tetrahedra.voxels[3].index, tetrahedra.voxels[1].index);
+							ind2 = mesh.addVertex(inter2, tetrahedra.voxels[3].index, tetrahedra.voxels[3].index);
+							if (caseId == 7)
 								mesh.addTriangle(ind0, ind2, ind1);
+							else
+								mesh.addTriangle(ind2, ind0, ind1);
 							break;
 
 					}
